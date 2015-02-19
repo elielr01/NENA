@@ -5,14 +5,22 @@ import javax.swing.JFrame;
 import java.awt.Graphics;
 import java.awt.Font;
 import java.awt.Color;
-import java.applet.Applet;
-import java.applet.AudioClip;
+//import java.applet.Applet;
+//import java.applet.AudioClip;
 import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.net.URL;
 import java.util.LinkedList;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Vector;
 
 public class NENA extends JFrame implements Runnable, KeyListener {
     
@@ -20,7 +28,7 @@ public class NENA extends JFrame implements Runnable, KeyListener {
     private final int iMAXALTO = 8;  // maxuimo numero de personajes por alto
     private Base basJuanito;         // Objeto Juanito
     private Base basNena;         // Objeto Nena
-    private Base basFantasma;
+    private Base basFantasma;    // Objeto Fantasma
     private int iVidas;         //Vidas del juego
     private int iScore;         //Puntos del juego
     private boolean bPause;       //Pausa el juego
@@ -37,6 +45,12 @@ public class NENA extends JFrame implements Runnable, KeyListener {
     private SoundClip adcSonidoNena1;   // Objeto sonido de Nena 1
     private SoundClip adcSonidoNena2;   // Objeto sonido de Nena 2
     
+    private Vector vec;    // Objeto vector para agregar los datos.
+    private String nombreArchivo;    //Nombre del archivo.
+    private String[] arr;    //Arreglo del archivo divido.
+    private long tiempoActual;	//Tiempo.
+    private boolean bGuardar;     //Variable G (Guardar)
+    
     /** 
      * init
      * 
@@ -46,6 +60,15 @@ public class NENA extends JFrame implements Runnable, KeyListener {
      * 
      */
     public void init() {
+    
+        nombreArchivo = "Datos.txt";
+        
+        // Crea un nuevo vector
+        vec = new Vector(); 
+        
+        // Carga en falso
+        bGuardar = false;
+        
         // hago el applet de un tamaño 800,500
         setSize(800,500);
         
@@ -163,6 +186,7 @@ public class NENA extends JFrame implements Runnable, KeyListener {
         th.start ();
     }
     
+    // Constructor
     public NENA() {
         setTitle("Nena vs Los Fantasmas");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -188,7 +212,7 @@ public class NENA extends JFrame implements Runnable, KeyListener {
             //Verifico si está en pausa
             if (!bPause) {
                 actualiza();
-                checaColision();                
+                checaColision();
             }
             repaint();
             try	{
@@ -200,6 +224,20 @@ public class NENA extends JFrame implements Runnable, KeyListener {
                         iexError.toString());
             }
 	}
+        
+        if (bGuardar) {
+            try {
+                leeArchivo();    //lee el contenido del archivo
+                //Agrega el contenido al nuevo vector.
+                vec.add(new Datos(iVidas, iScore, basNena.getX(), 
+                        basNena.getY()));
+                //Graba el vector en el archivo.
+                grabaArchivo();
+            }
+            catch(IOException e) {
+                System.out.println("Error en " + e.toString());
+            }
+        }
     }
     
     /** 
@@ -263,8 +301,8 @@ public class NENA extends JFrame implements Runnable, KeyListener {
         if (basNena.getX() < 0) {
             basNena.setX(0);
         }
-        if (basNena.getY() < 0) {
-            basNena.setY(0);
+        if (basNena.getY() < 22) {
+            basNena.setY(22);
         }
         if (basNena.getX() + basNena.getAncho() > this.getWidth()) {
             basNena.setX(this.getWidth() - basNena.getAncho());
@@ -422,6 +460,42 @@ public class NENA extends JFrame implements Runnable, KeyListener {
         
     }
     
+    // Método para leer el archivo
+    public void leeArchivo() throws IOException {
+        BufferedReader fileIn;
+        try {
+            fileIn = new BufferedReader(new FileReader(nombreArchivo));
+        } catch (FileNotFoundException e){
+            File datos = new File(nombreArchivo);
+            PrintWriter fileOut = new PrintWriter(datos);
+            fileOut.println("5, 0, 100, 100");
+            fileOut.close();
+            fileIn = new BufferedReader(new FileReader(nombreArchivo));
+        }
+        String dato = fileIn.readLine();
+        while(dato != null) {  
+            arr = dato.split(",");
+            int vidas = (Integer.parseInt(arr[0]));
+            int score = (Integer.parseInt(arr[1]));
+            int posXnena = (Integer.parseInt(arr[2]));
+            int posYnena = (Integer.parseInt(arr[3]));
+            vec.add(new Datos(vidas, score, posXnena, 
+                                posYnena));
+            dato = fileIn.readLine();
+        }
+        fileIn.close();
+        }
+    
+    //Método para grabar el archivo
+    public void grabaArchivo() throws IOException {                                          
+        PrintWriter fileOut = new PrintWriter(new FileWriter(nombreArchivo));
+        for (int i = 0; i < vec.size(); i++) {
+            Datos x;
+            x = (Datos) vec.get(i);
+            fileOut.println(x.toString());
+        }
+        fileOut.close();
+    }
 
     @Override
     public void keyTyped(KeyEvent e) {
@@ -433,6 +507,11 @@ public class NENA extends JFrame implements Runnable, KeyListener {
 
     @Override
     public void keyReleased(KeyEvent keyEvento) {
+        
+        //Verifico que se haya presionado la tecla G
+        if (keyEvento.getKeyCode() == KeyEvent.VK_G) {
+            bGuardar = true;
+        }
         
         //Verifico que se haya presionado la tecla P
         if (keyEvento.getKeyCode() == KeyEvent.VK_P) {
