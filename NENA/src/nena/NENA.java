@@ -21,6 +21,8 @@ import java.io.PrintWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Vector;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class NENA extends JFrame implements Runnable, KeyListener {
     
@@ -38,17 +40,17 @@ public class NENA extends JFrame implements Runnable, KeyListener {
     private LinkedList <Base> lklFantasmas;  //Lista de Fantasmas
     private int iVelJuanito;        //Velocidades de Juantio
     private int iChoques;       //Cuantas veces Juanito choca con Nena
+    private int iRandomFantasmas;
+    private int iRandomJuanito;
     
     /* objetos para manejar el buffer del Applet y este no parpadee */
     private Image    imaImagenApplet;   // Imagen a proyectar en Applet	
     private Graphics graGraficaApplet;  // Objeto grafico de la Imagen
     private SoundClip adcSonidoNena1;   // Objeto sonido de Nena 1
     private SoundClip adcSonidoNena2;   // Objeto sonido de Nena 2
-    
-    private Vector vec;    // Objeto vector para agregar los datos.
     private String nombreArchivo;    //Nombre del archivo.
     private String[] arr;    //Arreglo del archivo divido.
-    private long tiempoActual;	//Tiempo.
+
     private boolean bGuardar;     //Variable G (Guardar)
     
     /** 
@@ -62,9 +64,6 @@ public class NENA extends JFrame implements Runnable, KeyListener {
     public void init() {
     
         nombreArchivo = "Datos.txt";
-        
-        // Crea un nuevo vector
-        vec = new Vector(); 
         
         // Carga en falso
         bGuardar = false;
@@ -110,9 +109,9 @@ public class NENA extends JFrame implements Runnable, KeyListener {
         
         /* Inicio con la Creación de Juanitos*/
         //Crea un número al azar para hacer Juanitos
-        int iRandom = (int) (Math.random() * 6) + 10;
+        iRandomJuanito = (int) (Math.random() * 6) + 10;
         int iPosRan;
-        for (int iI = 0; iI < iRandom; iI++) {
+        for (int iI = 0; iI < iRandomJuanito; iI++) {
             //Obtengo la url de Juanito
             URL urlJuanito = this.getClass().getResource("juanito.gif");
             //Creo a un Juanito
@@ -131,8 +130,8 @@ public class NENA extends JFrame implements Runnable, KeyListener {
         
         /*Inicio con la Creación de Fantasmas*/
         //Creo un número al azar para hacer Fantasmas
-        iRandom = (int) (Math.random() * 3) + 8;
-        for (int iI = 0; iI < iRandom; iI++) {
+        iRandomFantasmas = (int) (Math.random() * 3) + 8;
+        for (int iI = 0; iI < iRandomFantasmas; iI++) {
             //Obtengo la url de Fantasma
             URL urlFantasma = this.getClass().getResource("fantasmita.gif");
             //Creo a un Fantasma
@@ -224,20 +223,6 @@ public class NENA extends JFrame implements Runnable, KeyListener {
                         iexError.toString());
             }
 	}
-        
-        if (bGuardar) {
-            try {
-                leeArchivo();    //lee el contenido del archivo
-                //Agrega el contenido al nuevo vector.
-                vec.add(new Datos(iVidas, iScore, basNena.getX(), 
-                        basNena.getY()));
-                //Graba el vector en el archivo.
-                grabaArchivo();
-            }
-            catch(IOException e) {
-                System.out.println("Error en " + e.toString());
-            }
-        }
     }
     
     /** 
@@ -372,8 +357,7 @@ public class NENA extends JFrame implements Runnable, KeyListener {
             }
             if (basFantasma.getX() + basFantasma.getAncho() > this.getWidth()) {
                 basFantasma.setY(this.getWidth() - basFantasma.getAncho());
-            }            
-            
+            }                
             
         }
 
@@ -449,7 +433,7 @@ public class NENA extends JFrame implements Runnable, KeyListener {
         // Actualiza la imagen de fondo.
         URL urlImagenFondo = this.getClass().getResource("Ciudad.png");
         Image imaImagenFondo = Toolkit.getDefaultToolkit().getImage(urlImagenFondo);
-         graGraficaApplet.drawImage(imaImagenFondo, 0, 0, getWidth(), getHeight(), this);
+        graGraficaApplet.drawImage(imaImagenFondo, 0, 0, getWidth(), getHeight(), this);
 
         // Actualiza el Foreground.
         graGraficaApplet.setColor (getForeground());
@@ -459,42 +443,113 @@ public class NENA extends JFrame implements Runnable, KeyListener {
         graGrafico.drawImage (imaImagenApplet, 0, 0, this);
         
     }
-    
-    // Método para leer el archivo
-    public void leeArchivo() throws IOException {
+   
+    /**
+     * Metodo que lee la informacion de un archivo.
+     *
+     * @throws IOException
+     */
+    private void leeArchivo() throws IOException{
         BufferedReader fileIn;
-        try {
-            fileIn = new BufferedReader(new FileReader(nombreArchivo));
-        } catch (FileNotFoundException e){
-            File datos = new File(nombreArchivo);
-            PrintWriter fileOut = new PrintWriter(datos);
-            fileOut.println("5, 0, 100, 100");
-            fileOut.close();
-            fileIn = new BufferedReader(new FileReader(nombreArchivo));
-        }
-        String dato = fileIn.readLine();
-        while(dato != null) {  
-            arr = dato.split(",");
-            int vidas = (Integer.parseInt(arr[0]));
-            int score = (Integer.parseInt(arr[1]));
-            int posXnena = (Integer.parseInt(arr[2]));
-            int posYnena = (Integer.parseInt(arr[3]));
-            vec.add(new Datos(vidas, score, posXnena, 
-                                posYnena));
+    	try{
+    		fileIn = new BufferedReader(new FileReader(nombreArchivo));
+    	} catch (FileNotFoundException e){
+    		File datos = new File(nombreArchivo);
+    		PrintWriter fileOut = new PrintWriter(datos);
+    		fileOut.println("100,demo");
+    		fileOut.close();
+    		fileIn = new BufferedReader(new FileReader(nombreArchivo));
+    	}
+        
+    	String dato = fileIn.readLine();
+        // Lee la cantidad de vidas
+        iVidas = (Integer.parseInt(dato));
+        
+        dato = fileIn.readLine();
+        
+        // Lee el score
+        iScore = (Integer.parseInt(dato));
+        
+        dato = fileIn.readLine();
+        
+        // Lee la direccion
+        iDireccion = (Integer.parseInt(dato));
+ 
+        dato = fileIn.readLine();
+        
+        // Lee a Nena
+        arr = dato.split(" ");
+        basNena.setX(Integer.parseInt(arr[0]));
+        basNena.setY(Integer.parseInt(arr[1]));
+        
+        String dato2 = new String();
+        dato2 = fileIn.readLine();
+         
+        // Lee los fantasmas
+        for (int iI = 0; iI < (Integer.parseInt(dato2)); iI++) {
             dato = fileIn.readLine();
+            arr = dato.split(" ");
+            lklFantasmas.get(iI).setX(Integer.parseInt(arr[0]));
+            lklFantasmas.get(iI).setY(Integer.parseInt(arr[1]));
         }
-        fileIn.close();
+        
+         dato2 = fileIn.readLine();
+         
+        // Lee los juanitos
+        for (int iI = 0; iI < (Integer.parseInt(dato2)); iI++) {
+            dato = fileIn.readLine();
+            arr = dato.split(" ");
+            lklJuanitos.get(iI).setX(Integer.parseInt(arr[0]));
+            lklJuanitos.get(iI).setY(Integer.parseInt(arr[1]));
         }
+        
+        // Lee si esta pausado o no
+        dato = fileIn.readLine();
+        bPause = (Boolean.parseBoolean(dato));
+        
     
-    //Método para grabar el archivo
-    public void grabaArchivo() throws IOException {                                          
+    	fileIn.close();
+    }
+    /**
+     * Metodo graba información en un archivo.
+     *
+     * @throws IOException
+     */
+    private void grabaArchivo() throws IOException {
         PrintWriter fileOut = new PrintWriter(new FileWriter(nombreArchivo));
-        for (int i = 0; i < vec.size(); i++) {
-            Datos x;
-            x = (Datos) vec.get(i);
-            fileOut.println(x.toString());
+        
+        // Guarda cantidad de vidas
+        fileOut.println(iVidas);
+        
+        // Guarda el score
+        fileOut.println(iScore);
+        
+        // Guarda la dirección
+        fileOut.println(iDireccion);
+        
+        // Guarda a Nena
+        fileOut.println(basNena.getX() + " " + basNena.getY());
+        
+        // Guarda la cantidad de Fantasmas
+        fileOut.println(iRandomFantasmas);
+        
+        // Guarda cada Fantasma
+        for (Base basFantasma : lklFantasmas) {
+            fileOut.println(basFantasma.getX() + " " + basFantasma.getY());
         }
-        fileOut.close();
+        
+        // Guarda la cantidad de Juanitos
+        fileOut.println(iRandomJuanito);
+        
+        // Guarda cada Juanito
+        for (Base basJuanito : lklJuanitos) {
+            fileOut.println(basJuanito.getX() + " " + basJuanito.getY());
+        }
+        
+        // Guarda si está pausado o no
+        fileOut.println(bPause);
+        
+    	fileOut.close();	        
     }
 
     @Override
@@ -507,11 +562,22 @@ public class NENA extends JFrame implements Runnable, KeyListener {
 
     @Override
     public void keyReleased(KeyEvent keyEvento) {
-        
+
         //Verifico que se haya presionado la tecla G
         if (keyEvento.getKeyCode() == KeyEvent.VK_G) {
-            bGuardar = true;
+            try {
+                grabaArchivo();
+            } catch (IOException ex) {
+                Logger.getLogger(NENA.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
+       else if (keyEvento.getKeyCode() == KeyEvent.VK_C) {
+            try {
+                leeArchivo();
+            } catch (IOException ex) {
+                Logger.getLogger(NENA.class.getName()).log(Level.SEVERE, null, ex);
+            }
+       }
         
         //Verifico que se haya presionado la tecla P
         if (keyEvento.getKeyCode() == KeyEvent.VK_P) {
